@@ -31,6 +31,9 @@ list(
   oops/assimilation/CostJbTotal.h
   oops/assimilation/CostJcDFI.h
   oops/assimilation/CostJo.h
+  oops/assimilation/CostJoEvolvingGaussian.h
+  oops/assimilation/CostJoNonGaussian.h
+  oops/assimilation/NonGaussianDensity.h
   oops/assimilation/CostPert.h
   oops/assimilation/CostTermBase.h
   oops/assimilation/DRGMRESRMinimizer.h
@@ -630,7 +633,9 @@ if(BUILD_TESTING)
     test/TestFixture.h
 
     test/assimilation/ETKF.h
+    test/assimilation/EvolvingGaussianSingleCycle.h
     test/assimilation/FullGMRES.h
+    test/assimilation/NonGaussianDensity.h
     test/assimilation/rotmat.h
     test/assimilation/SolveMatrixEquation.h
     test/assimilation/SpectralLMP.h
@@ -1176,6 +1181,16 @@ if(BUILD_TESTING)
 
   ecbuild_add_test( TARGET  oops_assimilation_tridiagsolve
                     SOURCES test/assimilation/TriDiagSolve.cc
+                    ARGS    "test/testinput/empty.yaml"
+                    LIBS    oops )
+
+  ecbuild_add_test( TARGET  oops_assimilation_nongaussiandensity
+                    SOURCES test/assimilation/NonGaussianDensity.cc
+                    ARGS    "test/testinput/empty.yaml"
+                    LIBS    oops )
+
+  ecbuild_add_test( TARGET  oops_assimilation_evolvinggaussian_singlecycle
+                    SOURCES test/assimilation/EvolvingGaussianSingleCycle.cc
                     ARGS    "test/testinput/empty.yaml"
                     LIBS    oops )
 

@@ -101,9 +101,11 @@ template<typename MODEL, typename OBS> class CostJo : public CostTermBase<MODEL,
   void setPostProcAD() const override;
 
   /// Multiply by \f$ R\f$ and \f$ R^{-1}\f$.
-  std::unique_ptr<GeneralizedDepartures>
+  /// virtual so a non-Gaussian Jo subclass may substitute its own Jo-Hessian
+  /// action. The CostJo bodies are unchanged -> stock behavior preserved.
+  virtual std::unique_ptr<GeneralizedDepartures>
     multiplyCovar(const GeneralizedDepartures &) const override;
-  std::unique_ptr<GeneralizedDepartures>
+  virtual std::unique_ptr<GeneralizedDepartures>
     multiplyCoInv(const GeneralizedDepartures &) const override;
 
   /// Provide new departure.
@@ -123,18 +125,24 @@ template<typename MODEL, typename OBS> class CostJo : public CostTermBase<MODEL,
   /// Accessors
   const ObsSpaces_ & obspaces() const {return obspaces_;}
 
+ protected:
+  /// Build first-guess gradient from the departure. Default = R^{-1} d (the
+  /// Gaussian score). A non-Gaussian subclass overrides this to apply the true
+  /// score g(d). Stock CostJo behavior is identical.
+  virtual void setGradientFG(Departures_ & dep) { Rmat_->inverseMultiply(dep); }
+
+  std::unique_ptr<ObsErrors_> Rmat_;
+  /// Jo Gradient at first guess : \f$ R^{-1} (H(x_{fg})-y_{obs}) \f$.
+  std::unique_ptr<Departures_> gradFG_;
+
  private:
   double printJo(size_t, Departures_ &, std::ostream &) const;
 
   const eckit::LocalConfiguration conf_;
   ObsSpaces_ obspaces_;
   std::unique_ptr<Observations_> yobs_;
-  std::unique_ptr<ObsErrors_> Rmat_;
   std::unique_ptr<Observers_> observers_;
   std::vector<ObsDataInt_> qcflags_;
-
-  /// Jo Gradient at first guess : \f$ R^{-1} (H(x_{fg})-y_{obs}) \f$.
-  std::unique_ptr<Departures_> gradFG_;
 
   /// Linearized observation operators.
   std::shared_ptr<ObserversTLAD_> obstlad_;
@@ -217,7 +225,7 @@ double CostJo<MODEL, OBS>::computeCost() {
 
   // Gradient at first guess (to define inner loop rhs)
   gradFG_.reset(new Departures_(ydep));
-  Rmat_->inverseMultiply(*gradFG_);
+  this->setGradientFG(*gradFG_);   // hook; default applies R^{-1} (unchanged)
 
   // Print diagnostics
   Log::info() << "Jo Observations:"              << yobs_->info(qcflags_, "Jo Obs :") << std::endl;

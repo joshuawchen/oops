@@ -24,6 +24,7 @@
 #include "oops/assimilation/CostJb4D.h"
 #include "oops/assimilation/CostJcDFI.h"
 #include "oops/assimilation/CostJo.h"
+#include "oops/assimilation/CostJoEvolvingGaussian.h"
 #include "oops/assimilation/CostTermBase.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
@@ -183,9 +184,14 @@ CostJb4D<MODEL, OBS> * CostFct4DEnsVar<MODEL, OBS>::newJb(const eckit::Configura
 template <typename MODEL, typename OBS>
 CostJo<MODEL, OBS> * CostFct4DEnsVar<MODEL, OBS>::newJo(const eckit::Configuration & joConf) const {
   Log::trace() << "CostFct4DEnsVar::newJo" << std::endl;
-  return new CostJo<MODEL, OBS>(joConf, *commSpace_,
-                                timeWindow_.createSubWindow(subWinBgn_[0], subWinEnd_[last_]),
-                                *commTime_);
+  const auto subwin = timeWindow_.createSubWindow(subWinBgn_[0], subWinEnd_[last_]);
+  const std::string jotype = joConf.getString("jo type", "gaussian");
+  if (jotype == "gaussian") {
+    return new CostJo<MODEL, OBS>(joConf, *commSpace_, subwin, *commTime_);
+  } else if (jotype == "evolving gaussian") {
+    return new CostJoEvolvingGaussian<MODEL, OBS>(joConf, *commSpace_, subwin, *commTime_);
+  }
+  throw eckit::BadParameter("unknown jo type: " + jotype, Here());
 }
 
 // -----------------------------------------------------------------------------

@@ -15,10 +15,12 @@
 #include <vector>
 
 #include "eckit/config/Configuration.h"
+#include "eckit/exception/Exceptions.h"
 #include "eckit/mpi/Comm.h"
 #include "oops/assimilation/CostFunction.h"
 #include "oops/assimilation/CostJb3D.h"
 #include "oops/assimilation/CostJo.h"
+#include "oops/assimilation/CostJoEvolvingGaussian.h"
 #include "oops/assimilation/CostTermBase.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
@@ -140,7 +142,15 @@ CostJb3D<MODEL, OBS> * CostFct3DVar<MODEL, OBS>::newJb(const eckit::Configuratio
 template <typename MODEL, typename OBS>
 CostJo<MODEL, OBS> * CostFct3DVar<MODEL, OBS>::newJo(const eckit::Configuration & joConf) const {
   Log::trace() << "CostFct3DVar::newJo" << std::endl;
-  return new CostJo<MODEL, OBS>(joConf, comm_, timeWindow_);
+  // Optional "jo type" selects the observation cost term. Absent => stock
+  // Gaussian CostJo, so every existing YAML is unchanged.
+  const std::string jotype = joConf.getString("jo type", "gaussian");
+  if (jotype == "gaussian") {
+    return new CostJo<MODEL, OBS>(joConf, comm_, timeWindow_);
+  } else if (jotype == "evolving gaussian") {
+    return new CostJoEvolvingGaussian<MODEL, OBS>(joConf, comm_, timeWindow_);
+  }
+  throw eckit::BadParameter("unknown jo type: " + jotype, Here());
 }
 
 // -----------------------------------------------------------------------------

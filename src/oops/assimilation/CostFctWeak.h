@@ -18,10 +18,12 @@
 #include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
+#include "eckit/exception/Exceptions.h"
 #include "oops/assimilation/CostFunction.h"
 #include "oops/assimilation/CostJbJq.h"
 #include "oops/assimilation/CostJcDFI.h"
 #include "oops/assimilation/CostJo.h"
+#include "oops/assimilation/CostJoEvolvingGaussian.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/base/LinearModel.h"
@@ -185,10 +187,14 @@ CostJbJq<MODEL, OBS> * CostFctWeak<MODEL, OBS>::newJb(const eckit::Configuration
 template <typename MODEL, typename OBS>
 CostJo<MODEL, OBS> * CostFctWeak<MODEL, OBS>::newJo(const eckit::Configuration & joConf) const {
   Log::trace() << "CostFctWeak::newJo" << std::endl;
-  return new CostJo<MODEL, OBS>(joConf, *commSpace_,
-                                timeWindow_.createSubWindow(subWinBgn_[0],
-                                                             subWinEnd_[nsublocal_ - 1]),
-                                *commTime_);
+  const auto subwin = timeWindow_.createSubWindow(subWinBgn_[0], subWinEnd_[nsublocal_ - 1]);
+  const std::string jotype = joConf.getString("jo type", "gaussian");
+  if (jotype == "gaussian") {
+    return new CostJo<MODEL, OBS>(joConf, *commSpace_, subwin, *commTime_);
+  } else if (jotype == "evolving gaussian") {
+    return new CostJoEvolvingGaussian<MODEL, OBS>(joConf, *commSpace_, subwin, *commTime_);
+  }
+  throw eckit::BadParameter("unknown jo type: " + jotype, Here());
 }
 
 // -----------------------------------------------------------------------------
