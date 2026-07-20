@@ -58,6 +58,9 @@ inline oops::NonGaussianDensity fixtureDensity() {
   c.set("right curvature", -0.5);
   c.set("sigma at mode", 1.2);
   c.set("sigma floor", 0.3);
+  // Disable the mode neighbourhood: this fixture tests the raw Eq. 9 branches,
+  // including behaviour close to the mode. The window is covered separately.
+  c.set("mode window", 0.0);
   oops::NonGaussianDensityParameters p;
   p.deserialize(c);
   return oops::NonGaussianDensity(p);

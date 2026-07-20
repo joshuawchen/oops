@@ -80,6 +80,10 @@ inline eckit::LocalConfiguration mapDensityConfig() {
   c.set("right curvature", -0.05);
   c.set("sigma at mode", 1.10);
   c.set("sigma floor", 1.0e-3);
+  // Eq. 9 is what is under test here, so the mode neighbourhood is disabled;
+  // several reference cases have |d*| smaller than one grid spacing and would
+  // otherwise be answered by the fitted sigma rather than by Eq. 9.
+  c.set("mode window", 0.0);
   return c;
 }
 
