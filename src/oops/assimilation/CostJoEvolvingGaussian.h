@@ -13,6 +13,9 @@
 #ifndef OOPS_ASSIMILATION_COSTJOEVOLVINGGAUSSIAN_H_
 #define OOPS_ASSIMILATION_COSTJOEVOLVINGGAUSSIAN_H_
 
+#include <cmath>
+#include <vector>
+
 #include "oops/assimilation/CostJoNonGaussian.h"
 #include "oops/util/missingValues.h"
 
@@ -32,13 +35,18 @@ class CostJoEvolvingGaussian : public CostJoNonGaussian<MODEL, OBS> {
     const Departures_ & di = this->departure();      // cached d_i
     const auto & dens = this->densities();
     for (size_t jj = 0; jj < dy.size(); ++jj) {
-      auto & v = dy[jj];
-      const auto & d = di[jj];
-      for (size_t k = 0; k < v.size(); ++k) {
-        if (v[k] == util::missingValue<double>()) continue;
-        const double var = dens[jj].evolvingVariance(d[k]);   // sigma_o^2(d_i)
-        v[k] = inverse ? v[k] * var : v[k] / var;
+      // oops::ObsVector is model-agnostic and exposes no operator[]; use the
+      // portable serialize/deserialize pair for element-wise work.
+      std::vector<double> yv, dv;
+      dy[jj].serialize(yv);
+      di[jj].serialize(dv);
+      for (size_t k = 0; k < yv.size(); ++k) {
+        if (yv[k] == util::missingValue<double>()) continue;
+        const double var = dens[jj].evolvingVariance(dv[k]);   // sigma_o^2(d_i)
+        yv[k] = inverse ? yv[k] * var : yv[k] / var;
       }
+      size_t idx = 0;
+      dy[jj].deserialize(yv, idx);
     }
   }
 };

@@ -71,10 +71,12 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
     depCache_.reset(new Departures_(dep));      // d_i, before overwrite
     this->saveEvolvingSigma(dep);               // optional, YAML-gated
     for (size_t jj = 0; jj < dep.size(); ++jj) {
-      auto & v = dep[jj];
-      for (size_t k = 0; k < v.size(); ++k)
-        if (v[k] != util::missingValue<double>())
-          v[k] = densities_[jj].score(v[k]);    // dep <- g(d_i)
+      std::vector<double> vals;
+      dep[jj].serialize(vals);                  // model-agnostic element access
+      for (double & x : vals)
+        if (x != util::missingValue<double>()) x = densities_[jj].score(x);
+      size_t idx = 0;
+      dep[jj].deserialize(vals, idx);           // dep <- g(d_i)
     }
     ++outerLoop_;
   }
@@ -95,14 +97,20 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
 
     Departures_ sig(dep);
     for (size_t jj = 0; jj < sig.size(); ++jj) {
-      auto & v = sig[jj];
-      for (size_t k = 0; k < v.size(); ++k) v[k] = 1.0;
+      std::vector<double> vals;
+      sig[jj].serialize(vals);
+      for (double & x : vals) x = 1.0;
+      size_t idx = 0;
+      sig[jj].deserialize(vals, idx);
     }
     applyJoHessianInverse(sig);                 // sig <- A^{-1} 1 = sigma_o^2(d_i)
     for (size_t jj = 0; jj < sig.size(); ++jj) {
-      auto & v = sig[jj];
-      for (size_t k = 0; k < v.size(); ++k)
-        if (v[k] != util::missingValue<double>() && v[k] > 0.0) v[k] = std::sqrt(v[k]);
+      std::vector<double> vals;
+      sig[jj].serialize(vals);
+      for (double & x : vals)
+        if (x != util::missingValue<double>() && x > 0.0) x = std::sqrt(x);
+      size_t idx = 0;
+      sig[jj].deserialize(vals, idx);
     }
     // NB: one name is used for the whole Departures (all obs spaces), following
     // the convention used for ombg/oman; the first obs space's prefix is taken.
