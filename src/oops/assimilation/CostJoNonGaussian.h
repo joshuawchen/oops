@@ -27,7 +27,9 @@
 #ifndef OOPS_ASSIMILATION_COSTJONONGAUSSIAN_H_
 #define OOPS_ASSIMILATION_COSTJONONGAUSSIAN_H_
 
+#include <cmath>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "oops/assimilation/CostJo.h"
@@ -63,15 +65,48 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
 
  protected:
   /// (1) Jo gradient = true score g(d). ALSO caches the outer-loop departure
-  ///     d_i so applyJoHessian can evaluate A at the re-linearization point.
+  ///     d_i so applyJoHessian can evaluate A at the re-linearization point,
+  ///     and optionally writes the effective sigma diagnostic.
   void setGradientFG(Departures_ & dep) override {
     depCache_.reset(new Departures_(dep));      // d_i, before overwrite
+    this->saveEvolvingSigma(dep);               // optional, YAML-gated
     for (size_t jj = 0; jj < dep.size(); ++jj) {
       auto & v = dep[jj];
       for (size_t k = 0; k < v.size(); ++k)
         if (v[k] != util::missingValue<double>())
           v[k] = densities_[jj].score(v[k]);    // dep <- g(d_i)
     }
+    ++outerLoop_;
+  }
+
+  /// Optional per-outer-loop diagnostic: write the effective observation error
+  /// sigma_o(d_i) into the ObsSpace, so it appears in the obs diagnostic files
+  /// alongside hofx and can be compared with data-implied estimates.
+  ///
+  /// Enabled per obs space with "save evolving sigma: true"; off by default.
+  /// The quantity written is sqrt of the diagonal of the INVERSE Jo Hessian,
+  /// obtained by applying applyJoHessianInverse to a vector of ones. Doing it
+  /// this way means the diagnostic works for ANY CostJoNonGaussian subclass
+  /// without assuming a particular curvature model.
+  void saveEvolvingSigma(const Departures_ & dep) const {
+    bool wanted = false;
+    for (const auto & d : densities_) if (d.saveSigma()) wanted = true;
+    if (!wanted) return;
+
+    Departures_ sig(dep);
+    for (size_t jj = 0; jj < sig.size(); ++jj) {
+      auto & v = sig[jj];
+      for (size_t k = 0; k < v.size(); ++k) v[k] = 1.0;
+    }
+    applyJoHessianInverse(sig);                 // sig <- A^{-1} 1 = sigma_o^2(d_i)
+    for (size_t jj = 0; jj < sig.size(); ++jj) {
+      auto & v = sig[jj];
+      for (size_t k = 0; k < v.size(); ++k)
+        if (v[k] != util::missingValue<double>() && v[k] > 0.0) v[k] = std::sqrt(v[k]);
+    }
+    // NB: one name is used for the whole Departures (all obs spaces), following
+    // the convention used for ombg/oman; the first obs space's prefix is taken.
+    sig.save(densities_[0].sigmaGroup() + std::to_string(outerLoop_));
   }
 
   /// The cached outer-loop departure d_i (nullptr before first computeCost).
@@ -95,6 +130,7 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
  private:
   std::vector<NonGaussianDensity> densities_;
   std::unique_ptr<Departures_> depCache_;   // d_i for the current outer loop
+  size_t outerLoop_ = 0;                    // index appended to the sigma group
 };
 
 }  // namespace oops

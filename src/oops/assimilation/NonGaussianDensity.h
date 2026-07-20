@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 #include <vector>
 
 #include "eckit/config/Configuration.h"
@@ -53,6 +54,13 @@ class NonGaussianDensityParameters : public Parameters {
   RequiredParameter<double> sigmaAtMode{"sigma at mode", this};
   /// SPD floor on any Jo-Hessian (guards true-GN indefiniteness & mode).
   Parameter<double> sigmaFloor{"sigma floor", 1.0e-3, this};
+  /// Diagnostics: write the evolving sigma_o(d) to the ObsSpace each outer loop
+  /// so it appears in the obs diagnostic files. Off by default (costs one extra
+  /// ObsVector save per outer loop when enabled).
+  Parameter<bool> saveSigma{"save evolving sigma", false, this};
+  /// Group name prefix for the saved sigma; the outer-loop index is appended,
+  /// e.g. EvolvingSigma0, EvolvingSigma1, ...
+  Parameter<std::string> sigmaGroup{"evolving sigma group", "EvolvingSigma", this};
 };
 
 /// Evaluator. All O(1); index j = clamp((d - stableMin)/dx). Mirrors the
@@ -63,9 +71,12 @@ class NonGaussianDensity {
     : m_(p.mode), dx_(p.dx), sMin_(p.stableMin), sMax_(p.stableMax),
       slopes_(p.logSlopes), lSlope_(p.leftLogSlope), lDD_(p.leftCurvature),
       rSlope_(p.rightLogSlope), rDD_(p.rightCurvature),
-      sigMode_(p.sigmaAtMode), sigFloor_(p.sigmaFloor) {}
+      sigMode_(p.sigmaAtMode), sigFloor_(p.sigmaFloor),
+      saveSigma_(p.saveSigma), sigmaGroup_(p.sigmaGroup) {}
 
   double mode() const {return m_;}
+  bool saveSigma() const {return saveSigma_;}
+  const std::string & sigmaGroup() const {return sigmaGroup_;}
 
   /// score g(d) = -(d/dd) log f(d) = d/dd[-log f]. This is the Jo GRADIENT
   /// per obs (shared by every non-Gaussian implementation).
@@ -105,6 +116,8 @@ class NonGaussianDensity {
   double m_, dx_, sMin_, sMax_;
   std::vector<double> slopes_;
   double lSlope_, lDD_, rSlope_, rDD_, sigMode_, sigFloor_;
+  bool saveSigma_;
+  std::string sigmaGroup_;
 };
 
 }  // namespace oops
