@@ -86,6 +86,12 @@ final:
   increment:
     geometry:
       resol: 40
+    output:
+      state component:
+        datadir: Data
+        exp: 3dvar_evolvinggaussian
+        date: 2010-01-02T00:00:00Z
+        type: in
 output:
   datadir: Data
   exp: 3dvar_evolvinggaussian
