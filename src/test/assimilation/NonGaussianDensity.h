@@ -63,10 +63,16 @@ inline oops::NonGaussianDensity fixtureDensity() {
   return oops::NonGaussianDensity(p);
 }
 
+// Gaussian fixture grid. Kept at namespace scope so the test can sample at
+// exact bin centres (see gaussian_reduction).
+const double kGaussLo = -6.0;
+const double kGaussHi = 6.0;
+const double kGaussDx = 0.25;
+
 // log f exactly quadratic: slope_log(d) = -(bin centre)/s^2 -> score=d/s^2,
 // evolvingVariance = s^2 exactly.
 inline oops::NonGaussianDensity gaussianDensity(double s2) {
-  const double dx = 0.25, lo = -6.0, hi = 6.0;
+  const double dx = kGaussDx, lo = kGaussLo, hi = kGaussHi;
   std::vector<double> slopes;
   for (double d = lo; d < hi - 1.0e-9; d += dx) slopes.push_back(-(d + 0.5*dx) / s2);
   eckit::LocalConfiguration c;
@@ -108,10 +114,24 @@ CASE("assimilation/NonGaussianDensity/branches") {
 }
 
 CASE("assimilation/NonGaussianDensity/gaussian_reduction") {
+  // A density whose log is exactly quadratic must give evolvingVariance == s^2.
+  // The interior score is piecewise CONSTANT (one slope per bin), so the
+  // identity sigma_o^2(d) = (d-m)/g(d) = s^2 is exact where d coincides with
+  // the bin centre the slope was derived from; away from a centre the value
+  // differs by the discretisation ratio d/centre. Sample at exact centres for
+  // the machine-precision claim, then check the off-centre error is bounded by
+  // that ratio (i.e. it is discretisation, not a modelling error).
   for (double s2 : {0.5, 2.0, 9.0}) {
     const oops::NonGaussianDensity f = gaussianDensity(s2);
-    for (double d : {-3.1, -1.3, -0.7, 0.6, 1.9, 3.3})
-      EXPECT(oops::is_close_absolute(f.evolvingVariance(d), s2, 1.0e-10));
+    for (size_t j : {11, 19, 23, 26, 31, 37}) {
+      const double centre = kGaussLo + (static_cast<double>(j) + 0.5) * kGaussDx;
+      EXPECT(oops::is_close_absolute(f.evolvingVariance(centre), s2, 1.0e-12));
+    }
+    // off-centre: bounded by half a bin relative to the sample point
+    for (double d : {-3.1, -1.3, -0.7, 0.6, 1.9, 3.3}) {
+      const double tol = s2 * (0.5 * kGaussDx / std::abs(d)) * 1.01;
+      EXPECT(oops::is_close_absolute(f.evolvingVariance(d), s2, tol));
+    }
   }
 }
 

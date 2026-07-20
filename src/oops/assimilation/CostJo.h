@@ -131,19 +131,29 @@ template<typename MODEL, typename OBS> class CostJo : public CostTermBase<MODEL,
   /// score g(d). Stock CostJo behavior is identical.
   virtual void setGradientFG(Departures_ & dep) { Rmat_->inverseMultiply(dep); }
 
-  std::unique_ptr<ObsErrors_> Rmat_;
-  /// Jo Gradient at first guess : \f$ R^{-1} (H(x_{fg})-y_{obs}) \f$.
-  std::unique_ptr<Departures_> gradFG_;
-
  private:
   double printJo(size_t, Departures_ &, std::ostream &) const;
 
   const eckit::LocalConfiguration conf_;
   ObsSpaces_ obspaces_;
   std::unique_ptr<Observations_> yobs_;
+
+ protected:
+  // NB: member DECLARATION ORDER below is unchanged from the original class;
+  // only the access specifiers around Rmat_ and gradFG_ differ. Keeping the
+  // order intact matters because the constructor's initializer list follows it
+  // (reordering would trigger -Wreorder warnings).
+  std::unique_ptr<ObsErrors_> Rmat_;
+
+ private:
   std::unique_ptr<Observers_> observers_;
   std::vector<ObsDataInt_> qcflags_;
 
+ protected:
+  /// Jo Gradient at first guess : \f$ R^{-1} (H(x_{fg})-y_{obs}) \f$.
+  std::unique_ptr<Departures_> gradFG_;
+
+ private:
   /// Linearized observation operators.
   std::shared_ptr<ObserversTLAD_> obstlad_;
 
