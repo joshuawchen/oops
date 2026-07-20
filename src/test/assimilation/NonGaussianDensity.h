@@ -51,10 +51,10 @@ inline oops::NonGaussianDensity fixtureDensity() {
   c.set("grid spacing", 0.5);
   c.set("stable min", -2.0);
   c.set("stable max", 2.0);
-  c.set("log slopes", std::vector<double>{1.0, 0.6, 0.3, -0.3, -0.6, -1.0, -1.3, -1.5});
+  c.set("log slopes", std::vector<double>{1.0, 0.8, 0.5, 0.2, -0.2, -0.5, -0.8, -1.0});
   c.set("left log slope", 1.0);
   c.set("left curvature", -0.4);
-  c.set("right log slope", -1.5);
+  c.set("right log slope", -1.0);
   c.set("right curvature", -0.5);
   c.set("sigma at mode", 1.2);
   c.set("sigma floor", 0.3);
@@ -101,13 +101,13 @@ CASE("assimilation/NonGaussianDensity/branches") {
   const std::vector<Ref> ref = {
     {-3.00, -1.400000000000e+00, 4.000000000000e-01, 2.142857142857e+00},
     {-2.00, -1.000000000000e+00, 4.000000000000e-01, 2.000000000000e+00},
-    {-1.10, -6.000000000000e-01, 6.944444444444e-01, 1.833333333333e+00},
-    {-0.50,  3.000000000000e-01, 6.944444444444e-01, 9.000000000000e-02},
-    { 0.00,  6.000000000000e-01, 6.944444444444e-01, 1.440000000000e+00},
-    { 0.40,  6.000000000000e-01, 6.944444444444e-01, 6.666666666667e-01},
-    { 0.90,  1.000000000000e+00, 6.944444444444e-01, 9.000000000000e-01},
-    { 2.00,  1.500000000000e+00, 5.000000000000e-01, 1.333333333333e+00},
-    { 3.00,  2.000000000000e+00, 5.000000000000e-01, 1.500000000000e+00},
+    {-1.10, -8.000000000000e-01, 6.944444444444e-01, 1.375000000000e+00},
+    {-0.50, -2.000000000000e-01, 6.944444444444e-01, 2.500000000000e+00},
+    { 0.00,  2.000000000000e-01, 6.944444444444e-01, 1.440000000000e+00},
+    { 0.40,  2.000000000000e-01, 6.944444444444e-01, 2.000000000000e+00},
+    { 0.90,  5.000000000000e-01, 6.944444444444e-01, 1.800000000000e+00},
+    { 2.00,  1.000000000000e+00, 5.000000000000e-01, 2.000000000000e+00},
+    { 3.00,  1.500000000000e+00, 5.000000000000e-01, 2.000000000000e+00},
   };
   for (const auto & r : ref) {
     EXPECT(oops::is_close_absolute(f.score(r.d),            r.score, tol));
@@ -145,7 +145,7 @@ CASE("assimilation/NonGaussianDensity/spd_positive") {
 
 CASE("assimilation/NonGaussianDensity/gradient_consistency") {
   const oops::NonGaussianDensity f = fixtureDensity();
-  const std::vector<double> slopes{1.0, 0.6, 0.3, -0.3, -0.6, -1.0, -1.3, -1.5};
+  const std::vector<double> slopes{1.0, 0.8, 0.5, 0.2, -0.2, -0.5, -0.8, -1.0};
   const double dx = 0.5, sMin = -2.0;
   for (size_t j = 0; j < slopes.size(); ++j) {
     const double dc = sMin + (static_cast<double>(j) + 0.5) * dx;

@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "eckit/config/Configuration.h"
+#include "eckit/exception/Exceptions.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
@@ -81,7 +82,56 @@ class NonGaussianDensity {
       rSlope_(p.rightLogSlope), rDD_(p.rightCurvature),
       sigMode_(p.sigmaAtMode), sigFloor_(p.sigmaFloor),
       saveSigma_(p.saveSigma), sigmaGroup_(p.sigmaGroup),
-      modeWindow_(p.modeWindow >= 0.0 ? p.modeWindow.value() : p.dx.value()) {}
+      modeWindow_(p.modeWindow >= 0.0 ? p.modeWindow.value() : p.dx.value()) {
+    validate();
+  }
+
+  /// Reject configurations that cannot describe a usable unimodal density.
+  /// Without these checks the failures are SILENT: a slopes array of the wrong
+  /// length clamps the bin index and returns values for the wrong bin, and a
+  /// score whose sign disagrees with (d - m) makes Eq. 9 negative, which would
+  /// otherwise be clamped to the floor and give the observation an enormous
+  /// weight.
+  void validate() const {
+    if (!(dx_ > 0.0))
+      throw eckit::BadParameter("NonGaussianDensity: grid spacing must be > 0", Here());
+    if (!(sMax_ > sMin_))
+      throw eckit::BadParameter("NonGaussianDensity: stable max must exceed stable min",
+                                Here());
+    if (!(sigMode_ > 0.0))
+      throw eckit::BadParameter("NonGaussianDensity: sigma at mode must be > 0", Here());
+    if (sigFloor_ < 0.0)
+      throw eckit::BadParameter("NonGaussianDensity: sigma floor must be >= 0", Here());
+    if (slopes_.empty())
+      throw eckit::BadParameter("NonGaussianDensity: log slopes must not be empty", Here());
+
+    const double nbins = (sMax_ - sMin_) / dx_;
+    if (std::abs(nbins - static_cast<double>(slopes_.size())) > 1.0e-6)
+      throw eckit::BadParameter("NonGaussianDensity: log slopes has "
+            + std::to_string(slopes_.size()) + " entries but the grid implies "
+            + std::to_string(nbins) + " bins", Here());
+
+    if (m_ < sMin_ || m_ > sMax_)
+      throw eckit::BadParameter("NonGaussianDensity: mode lies outside [stable min, stable max]",
+                                Here());
+
+    // Tails must decay: log f quadratic with non-positive curvature.
+    if (lDD_ > 0.0 || rDD_ > 0.0)
+      throw eckit::BadParameter("NonGaussianDensity: tail curvatures must be <= 0, "
+                                "otherwise the density grows without bound", Here());
+
+    // Unimodality: log f rises below the mode and falls above it, so the score
+    // g(d) = -slope shares the sign of (d - m) and Eq. 9 stays positive.
+    for (size_t j = 0; j < slopes_.size(); ++j) {
+      const double centre = sMin_ + (static_cast<double>(j) + 0.5) * dx_;
+      if (centre < m_ && slopes_[j] < 0.0)
+        throw eckit::BadParameter("NonGaussianDensity: log slope " + std::to_string(j)
+              + " is negative below the mode; the density is not unimodal", Here());
+      if (centre > m_ && slopes_[j] > 0.0)
+        throw eckit::BadParameter("NonGaussianDensity: log slope " + std::to_string(j)
+              + " is positive above the mode; the density is not unimodal", Here());
+    }
+  }
 
   double mode() const {return m_;}
   bool saveSigma() const {return saveSigma_;}
@@ -112,11 +162,12 @@ class NonGaussianDensity {
     // zero rather than to the curvature limit. Use the fitted sigma there.
     if (std::abs(num) <= modeWindow_) return sigMode_ * sigMode_;
     const double g = score(d);
-    double var;
-    if (std::abs(g) < 1.0e-12)
-      var = sigMode_ * sigMode_;
-    else
-      var = num / g;                      // sign-safe for unimodal f
+    const double var = num / g;
+    // For a unimodal density g shares the sign of (d - m), so var > 0. If that
+    // is violated anyway (a ragged estimate slipping past validation, or a
+    // non-finite value), fall back to the fitted sigma. Clamping to the floor
+    // instead would give the observation an enormous weight -- silently.
+    if (!(var > 0.0) || !std::isfinite(var)) return sigMode_ * sigMode_;
     return std::max(var, sigFloor_ * sigFloor_);
   }
 

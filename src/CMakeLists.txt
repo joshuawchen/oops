@@ -637,6 +637,7 @@ if(BUILD_TESTING)
     test/assimilation/EvolvingGaussianSingleCycle.h
     test/assimilation/FullGMRES.h
     test/assimilation/NonGaussianDensity.h
+    test/assimilation/NonGaussianDensityStress.h
     test/assimilation/rotmat.h
     test/assimilation/SolveMatrixEquation.h
     test/assimilation/SpectralLMP.h
@@ -1187,6 +1188,11 @@ if(BUILD_TESTING)
 
   ecbuild_add_test( TARGET  oops_assimilation_nongaussiandensity
                     SOURCES test/assimilation/NonGaussianDensity.cc
+                    ARGS    "test/testinput/empty.yaml"
+                    LIBS    oops )
+
+  ecbuild_add_test( TARGET  oops_assimilation_nongaussiandensity_stress
+                    SOURCES test/assimilation/NonGaussianDensityStress.cc
                     ARGS    "test/testinput/empty.yaml"
                     LIBS    oops )
 
