@@ -52,6 +52,14 @@ class NonGaussianDensityParameters : public Parameters {
   /// +-window quadratic fit at export time). Also serves as the interior
   /// curvature scale for the true-GN option.
   RequiredParameter<double> sigmaAtMode{"sigma at mode", this};
+  /// Half-width of the neighbourhood of the mode over which sigmaAtMode is used
+  /// instead of Eq. 9. Necessary because the interior score is piecewise
+  /// CONSTANT: as d -> m inside a bin whose centre is offset from m,
+  /// sigma_o^2 = (d-m)/g(d) -> 0 and the observation weight 1/sigma_o^2 grows
+  /// without bound. The paper handles this by fitting a quadratic in a window
+  /// about the mode and using a constant sigma there (their Appendix A).
+  /// Default is one grid spacing; set to 0 to disable (point guard only).
+  Parameter<double> modeWindow{"mode window", -1.0, this};
   /// SPD floor on any Jo-Hessian (guards true-GN indefiniteness & mode).
   Parameter<double> sigmaFloor{"sigma floor", 1.0e-3, this};
   /// Diagnostics: write the evolving sigma_o(d) to the ObsSpace each outer loop
@@ -72,7 +80,8 @@ class NonGaussianDensity {
       slopes_(p.logSlopes), lSlope_(p.leftLogSlope), lDD_(p.leftCurvature),
       rSlope_(p.rightLogSlope), rDD_(p.rightCurvature),
       sigMode_(p.sigmaAtMode), sigFloor_(p.sigmaFloor),
-      saveSigma_(p.saveSigma), sigmaGroup_(p.sigmaGroup) {}
+      saveSigma_(p.saveSigma), sigmaGroup_(p.sigmaGroup),
+      modeWindow_(p.modeWindow >= 0.0 ? p.modeWindow.value() : p.dx.value()) {}
 
   double mode() const {return m_;}
   bool saveSigma() const {return saveSigma_;}
@@ -96,13 +105,16 @@ class NonGaussianDensity {
   }
 
   /// Evolving-Gaussian effective variance sigma_o^2(d) = (d - m)/g(d), Eq.(9),
-  /// with the mode limit and SPD floor handled.
+  /// with the mode neighbourhood and SPD floor handled.
   double evolvingVariance(double d) const {
     const double num = d - m_;
+    // Near the mode Eq. 9 is 0/0 and, for a piecewise-constant score, tends to
+    // zero rather than to the curvature limit. Use the fitted sigma there.
+    if (std::abs(num) <= modeWindow_) return sigMode_ * sigMode_;
     const double g = score(d);
     double var;
-    if (std::abs(num) < 1.0e-9 || std::abs(g) < 1.0e-12)
-      var = sigMode_ * sigMode_;          // 0/0 at mode -> curvature limit
+    if (std::abs(g) < 1.0e-12)
+      var = sigMode_ * sigMode_;
     else
       var = num / g;                      // sign-safe for unimodal f
     return std::max(var, sigFloor_ * sigFloor_);
@@ -118,6 +130,7 @@ class NonGaussianDensity {
   double lSlope_, lDD_, rSlope_, rDD_, sigMode_, sigFloor_;
   bool saveSigma_;
   std::string sigmaGroup_;
+  double modeWindow_;
 };
 
 }  // namespace oops

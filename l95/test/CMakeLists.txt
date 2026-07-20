@@ -1,5 +1,6 @@
 list( APPEND l95_test_input
   testinput/3dvar.yaml
+  testinput/3dvar_evolvinggaussian.yaml
   testinput/3dvar_4fsoi_dripcg.yaml
   testinput/3dvar_4fsoi_pcg.yaml
   testinput/3dvar_noobs.yaml
@@ -164,6 +165,7 @@ list( APPEND l95_test_data
 
 list( APPEND l95_testoutput
   testoutput/3dvar.test
+  testoutput/3dvar_evolvinggaussian.test
   testoutput/3dvar_4fsoi_dripcg.test
   testoutput/3dvar_4fsoi_pcg.test
   testoutput/3dvar_noobs.test
@@ -566,6 +568,11 @@ ecbuild_add_test( TARGET oops_l95_sqrtvertloc
 ecbuild_add_test( TARGET oops_l95_3dvar
                   COMMAND l95_4dvar.x
                   ARGS testinput/3dvar.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_3dvar_evolvinggaussian
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/3dvar_evolvinggaussian.yaml
                   TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
 
 ecbuild_add_test( TARGET oops_l95_3dvar_noobs

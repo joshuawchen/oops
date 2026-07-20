@@ -78,7 +78,6 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
       size_t idx = 0;
       dep[jj].deserialize(vals, idx);           // dep <- g(d_i)
     }
-    ++outerLoop_;
   }
 
   /// Optional per-outer-loop diagnostic: write the effective observation error
@@ -99,7 +98,11 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
     for (size_t jj = 0; jj < sig.size(); ++jj) {
       std::vector<double> vals;
       sig[jj].serialize(vals);
-      for (double & x : vals) x = 1.0;
+      // Preserve the missing-value mask: only live entries become 1, so
+      // applyJoHessianInverse still skips masked/QC-rejected observations and
+      // they stay missing in the diagnostic rather than receiving a value.
+      for (double & x : vals)
+        if (x != util::missingValue<double>()) x = 1.0;
       size_t idx = 0;
       sig[jj].deserialize(vals, idx);
     }
@@ -114,7 +117,11 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
     }
     // NB: one name is used for the whole Departures (all obs spaces), following
     // the convention used for ombg/oman; the first obs space's prefix is taken.
-    sig.save(densities_[0].sigmaGroup() + std::to_string(outerLoop_));
+    // The suffix is the OUTER-LOOP index taken from the current configuration --
+    // the same source CostJo uses to name innov<N> -- so the groups line up with
+    // the iterations even if computeCost is evaluated more than once per loop.
+    sig.save(densities_[0].sigmaGroup()
+             + std::to_string(this->currentConf().getInt("iteration", 0)));
   }
 
   /// The cached outer-loop departure d_i (nullptr before first computeCost).
@@ -138,7 +145,6 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
  private:
   std::vector<NonGaussianDensity> densities_;
   std::unique_ptr<Departures_> depCache_;   // d_i for the current outer loop
-  size_t outerLoop_ = 0;                    // index appended to the sigma group
 };
 
 }  // namespace oops

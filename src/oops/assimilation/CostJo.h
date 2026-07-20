@@ -131,6 +131,11 @@ template<typename MODEL, typename OBS> class CostJo : public CostTermBase<MODEL,
   /// score g(d). Stock CostJo behavior is identical.
   virtual void setGradientFG(Departures_ & dep) { Rmat_->inverseMultiply(dep); }
 
+  /// Configuration of the current initialize/finalize pair. Valid during
+  /// computeCost; carries the authoritative outer-loop "iteration" index (the
+  /// same one used to name the innov<N> departures).
+  const eckit::LocalConfiguration & currentConf() const { return *currentConf_; }
+
  private:
   double printJo(size_t, Departures_ &, std::ostream &) const;
 

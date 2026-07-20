@@ -1,0 +1,96 @@
+# Gaussian-equivalence check for the non-Gaussian Jo term.
+#
+# Identical to 3dvar.yaml except that the observation cost function is the
+# evolving-Gaussian term configured with a density that IS Gaussian. The
+# analysis must therefore reproduce the stock CostJo result.
+#
+# The l95 observations are generated with obs_error = 0.4 (makeobs3d.yaml), so
+# the matching Gaussian has sigma^2 = 0.16.
+#
+# HOW THIS IS EXACT. The density format stores a piecewise-LINEAR log density on
+# the interior, whose score is piecewise CONSTANT and so cannot equal the
+# Gaussian score d/sigma^2 exactly. The tails, however, are quadratic-log and
+# reproduce a Gaussian exactly when
+#     left curvature  = right curvature = -1/sigma^2
+#     left log slope  = -stable_min/sigma^2
+#     right log slope = -stable_max/sigma^2
+# because then  g(d) = -(slope + curvature*(d - edge)) = d/sigma^2  identically,
+# giving sigma_o^2(d) = (d-m)/g(d) = sigma^2 for every d.
+# The interior is therefore collapsed to a 2e-6-wide sliver about the mode, so
+# every realistic departure is evaluated by the exact tail expressions. Inside
+# the sliver the single interior slope is 0, the score vanishes and the fitted
+# sigma at the mode (= 0.4) is used, which is again the correct Gaussian value.
+#
+# Consequences that make this a strong test: the Jo gradient path
+# (setGradientFG -> score) must reproduce R^-1 d, and the Jo Hessian path
+# (applyJoHessian -> 1/sigma_o^2) must reproduce R^-1. Any sign error, wrong
+# branch selection, or mistake in Eq. 9 breaks the agreement.
+
+cost function:
+  cost type: 3D-Var
+  time window:
+    begin: 2010-01-01T21:00:00Z
+    length: PT6H
+  geometry:
+    resol: 40
+  analysis variables: [x]
+  background:
+    date: 2010-01-02T00:00:00Z
+    filename: Data/forecast.fc.2010-01-01T00:00:00Z.P1D.l95
+  background error:
+    covariance model: L95Error
+    date: 2010-01-02T00:00:00Z
+    length_scale: 1.0
+    standard_deviation: 0.6
+  observations:
+    jo type: evolving gaussian
+    observers:
+    - obs operator: {}
+      obs space:
+        obsdatain:
+          obsfile: Data/truth3d.2010-01-02T00:00:00Z.obt
+        obsdataout:
+          obsfile: Data/3dvar_evolvinggaussian.2010-01-02T00:00:00Z.obt
+      obs error:
+        covariance model: diagonal
+      non gaussian cost:
+        mode: 0.0
+        # degenerate interior: all departures fall in the exact tails
+        grid spacing: 2.0e-6
+        stable min: -1.0e-6
+        stable max: 1.0e-6
+        log slopes: [0.0]
+        # exact Gaussian tails for sigma^2 = 0.16
+        left log slope: 6.25e-6
+        left curvature: -6.25
+        right log slope: -6.25e-6
+        right curvature: -6.25
+        sigma at mode: 0.4
+        mode window: 0.0
+        # exercise the diagnostic path as well
+        save evolving sigma: true
+        evolving sigma group: EvolvingSigma
+variational:
+  minimizer:
+    algorithm: DRPCG
+  iterations:
+  - ninner: 10
+    gradient norm reduction: 1e-10
+    geometry:
+      resol: 40
+  - ninner: 10
+    gradient norm reduction: 1e-10
+    geometry:
+      resol: 40
+final:
+  increment:
+    geometry:
+      resol: 40
+output:
+  datadir: Data
+  exp: 3dvar_evolvinggaussian
+  times: ["2010-01-02T00:00:00Z"]
+  type: an
+
+test:
+  reference filename: testoutput/3dvar_evolvinggaussian.test
