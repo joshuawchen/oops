@@ -633,6 +633,7 @@ if(BUILD_TESTING)
     test/TestFixture.h
 
     test/assimilation/ETKF.h
+    test/assimilation/EvolvingGaussianMAP.h
     test/assimilation/EvolvingGaussianSingleCycle.h
     test/assimilation/FullGMRES.h
     test/assimilation/NonGaussianDensity.h
@@ -1191,6 +1192,11 @@ if(BUILD_TESTING)
 
   ecbuild_add_test( TARGET  oops_assimilation_evolvinggaussian_singlecycle
                     SOURCES test/assimilation/EvolvingGaussianSingleCycle.cc
+                    ARGS    "test/testinput/empty.yaml"
+                    LIBS    oops )
+
+  ecbuild_add_test( TARGET  oops_assimilation_evolvinggaussian_map
+                    SOURCES test/assimilation/EvolvingGaussianMAP.cc
                     ARGS    "test/testinput/empty.yaml"
                     LIBS    oops )
 
