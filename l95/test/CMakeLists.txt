@@ -1,6 +1,11 @@
 list( APPEND l95_test_input
   testinput/3dvar.yaml
   testinput/3dvar_evolvinggaussian.yaml
+  testinput/3dvar_evolvinggaussian_shifted.yaml
+  testinput/3dvar_gaussbias_minus.yaml
+  testinput/3dvar_gaussbias_plus.yaml
+  testinput/evolvinggaussian_shift_equivalence.yaml
+  testinput/evolvingsigma_content.yaml
   testinput/3dvar_nongaussian.yaml
   testinput/3dvar_4fsoi_dripcg.yaml
   testinput/3dvar_4fsoi_pcg.yaml
@@ -581,6 +586,35 @@ ecbuild_add_test( TARGET oops_l95_3dvar_nongaussian
                   COMMAND l95_4dvar.x
                   ARGS testinput/3dvar_nongaussian.yaml
                   TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_3dvar_evolvinggaussian_shifted
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/3dvar_evolvinggaussian_shifted.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_3dvar_gaussbias_minus
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/3dvar_gaussbias_minus.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_3dvar_gaussbias_plus
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/3dvar_gaussbias_plus.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_evolvinggaussian_shift_equivalence
+                  SOURCES lorenz95/EvolvingGaussianShiftEquivalence.cc
+                  ARGS testinput/evolvinggaussian_shift_equivalence.yaml
+                  LIBS lorenz95
+                  TEST_DEPENDS oops_l95_3dvar_evolvinggaussian_shifted
+                               oops_l95_3dvar_gaussbias_minus
+                               oops_l95_3dvar_gaussbias_plus )
+
+ecbuild_add_test( TARGET oops_l95_evolvingsigma_content
+                  SOURCES lorenz95/EvolvingSigmaContent.cc
+                  ARGS testinput/evolvingsigma_content.yaml
+                  LIBS lorenz95
+                  TEST_DEPENDS oops_l95_3dvar_evolvinggaussian )
 
 ecbuild_add_test( TARGET oops_l95_3dvar_noobs
                   COMMAND l95_4dvar.x

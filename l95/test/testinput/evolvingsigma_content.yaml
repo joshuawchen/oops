@@ -1,0 +1,5 @@
+# Content check for the evolving-sigma diagnostic; see EvolvingSigmaContent.cc.
+run config: testinput/3dvar_evolvinggaussian.yaml
+groups: [EvolvingSigma0, EvolvingSigma1]
+expected sigma: 0.4
+tolerance: 1.0e-6

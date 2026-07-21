@@ -1,0 +1,6 @@
+# Configs for the shift-equivalence check; see EvolvingGaussianShiftEquivalence.cc.
+shifted config: testinput/3dvar_evolvinggaussian_shifted.yaml
+matching config: testinput/3dvar_gaussbias_minus.yaml
+differing config: testinput/3dvar_gaussbias_plus.yaml
+match tolerance: 1.0e-4
+differ threshold: 5.0e-2
