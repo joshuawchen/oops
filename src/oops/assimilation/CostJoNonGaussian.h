@@ -128,6 +128,22 @@ class CostJoNonGaussian : public CostJo<MODEL, OBS> {
   const Departures_ & departure() const { return *depCache_; }
   const std::vector<NonGaussianDensity> & densities() const { return densities_; }
 
+  /// Jo = 0.5 <d - m, g(d)>. The base class value 0.5 <d, g(d)> matches only
+  /// when the mode m is zero; for a shifted density it can go negative and
+  /// trip the minimizers' JoJc >= 0 check.
+  double joValue(size_t jj, const Departures_ & ydep,
+                 const Departures_ & grad) const override {
+    Departures_ shifted(ydep);
+    std::vector<double> vals;
+    shifted[jj].serialize(vals);
+    const double m = densities_[jj].mode();
+    for (double & x : vals)
+      if (x != util::missingValue<double>()) x -= m;
+    size_t idx = 0;
+    shifted[jj].deserialize(vals, idx);
+    return 0.5 * dot_product(shifted[jj], grad[jj]);
+  }
+
   /// route the inherited (unchanged-name) covariance methods to the Jo Hessian
   std::unique_ptr<GeneralizedDepartures>
   multiplyCoInv(const GeneralizedDepartures & v1) const override {

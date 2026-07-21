@@ -138,6 +138,9 @@ template<typename MODEL, typename OBS> class CostJo : public CostTermBase<MODEL,
 
  private:
   double printJo(size_t, Departures_ &, std::ostream &) const;
+  /// Jo for one obs space. Virtual because a subclass can use a different
+  /// quadratic form (see CostJoNonGaussian).
+  virtual double joValue(size_t, const Departures_ &, const Departures_ &) const;
 
   const eckit::LocalConfiguration conf_;
   ObsSpaces_ obspaces_;
@@ -278,7 +281,7 @@ double CostJo<MODEL, OBS>::printJo(size_t jj, Departures_ & ydep, std::ostream &
   os << "CostJo   : Nonlinear Jo(" << obspaces_[jj].obsname() << ") = ";
 
   if (nobs > 0) {
-    zz = 0.5 * dot_product(ydep[jj], (*gradFG_)[jj]);
+    zz = this->joValue(jj, ydep, *gradFG_);
     const double err = (*Rmat_)[jj].getRMSE();
     os << zz << ", nobs = " << nobs << ", Jo/n = " << zz/nobs << ", err = " << err;
   } else {
@@ -294,6 +297,14 @@ double CostJo<MODEL, OBS>::printJo(size_t jj, Departures_ & ydep, std::ostream &
 
   Log::trace() << "CostJo::printJo done" << std::endl;
   return zz;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL, typename OBS>
+double CostJo<MODEL, OBS>::joValue(size_t jj, const Departures_ & ydep,
+                                   const Departures_ & grad) const {
+  return 0.5 * dot_product(ydep[jj], grad[jj]);
 }
 
 // -----------------------------------------------------------------------------

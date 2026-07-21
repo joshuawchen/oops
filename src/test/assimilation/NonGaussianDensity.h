@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
+#include "eckit/exception/Exceptions.h"
 #include "eckit/testing/Test.h"
 
 #include "oops/../test/TestEnvironment.h"
@@ -150,6 +151,97 @@ CASE("assimilation/NonGaussianDensity/gradient_consistency") {
   for (size_t j = 0; j < slopes.size(); ++j) {
     const double dc = sMin + (static_cast<double>(j) + 0.5) * dx;
     EXPECT(oops::is_close_absolute(f.score(dc), -slopes[j], tol));
+  }
+}
+
+// Same as gaussianDensity but with the mode at m.
+inline oops::NonGaussianDensity gaussianDensityAt(double s2, double m) {
+  const double dx = kGaussDx, lo = kGaussLo, hi = kGaussHi;
+  std::vector<double> slopes;
+  for (double d = lo; d < hi - 1.0e-9; d += dx) slopes.push_back(-(d + 0.5*dx - m) / s2);
+  eckit::LocalConfiguration c;
+  c.set("mode", m);
+  c.set("grid spacing", dx);
+  c.set("stable min", lo);
+  c.set("stable max", hi);
+  c.set("log slopes", slopes);
+  c.set("left log slope", -(lo - m) / s2);
+  c.set("left curvature", -1.0 / s2);
+  c.set("right log slope", -(hi - m) / s2);
+  c.set("right curvature", -1.0 / s2);
+  c.set("sigma at mode", std::sqrt(s2));
+  c.set("sigma floor", 1.0e-6);
+  oops::NonGaussianDensityParameters p;
+  p.deserialize(c);
+  return oops::NonGaussianDensity(p);
+}
+
+CASE("assimilation/NonGaussianDensity/shifted_mode_reduction") {
+  // Gaussian reduction with the mode away from zero: Eq. 9 uses (d - m), so
+  // the variance must still be exactly s^2 at every bin center.
+  const double s2 = 2.0, m = 0.75;
+  const oops::NonGaussianDensity f = gaussianDensityAt(s2, m);
+  for (size_t j : {5, 11, 19, 23, 27, 31, 37, 43}) {
+    const double center = kGaussLo + (static_cast<double>(j) + 0.5) * kGaussDx;
+    EXPECT(oops::is_close_absolute(f.evolvingVariance(center), s2, 1.0e-12));
+  }
+  EXPECT(oops::is_close_absolute(f.evolvingVariance(m), s2, 1.0e-12));
+}
+
+CASE("assimilation/NonGaussianDensity/validate_rejects") {
+  // Each block breaks one rule of validate() and must throw BadParameter.
+  // The count mismatch is the bug class the first estimated density hit.
+  eckit::LocalConfiguration base;
+  base.set("mode", 0.0);
+  base.set("grid spacing", 0.5);
+  base.set("stable min", -2.0);
+  base.set("stable max", 2.0);
+  base.set("log slopes", std::vector<double>{1.0, 0.8, 0.5, 0.2, -0.2, -0.5, -0.8, -1.0});
+  base.set("left log slope", 1.0);
+  base.set("left curvature", -0.4);
+  base.set("right log slope", -1.0);
+  base.set("right curvature", -0.5);
+  base.set("sigma at mode", 1.2);
+
+  {  // the base configuration is valid
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(base);
+    EXPECT_NO_THROW(oops::NonGaussianDensity{p});
+  }
+  {  // 8 slopes over an extent of 7 bins
+    eckit::LocalConfiguration c(base);
+    c.set("stable max", 1.5);
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(c);
+    EXPECT_THROWS_AS(oops::NonGaussianDensity{p}, eckit::BadParameter);
+  }
+  {  // growing right tail
+    eckit::LocalConfiguration c(base);
+    c.set("right curvature", 0.5);
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(c);
+    EXPECT_THROWS_AS(oops::NonGaussianDensity{p}, eckit::BadParameter);
+  }
+  {  // mode outside the stable interior
+    eckit::LocalConfiguration c(base);
+    c.set("mode", 3.0);
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(c);
+    EXPECT_THROWS_AS(oops::NonGaussianDensity{p}, eckit::BadParameter);
+  }
+  {  // negative slope below the mode: not unimodal
+    eckit::LocalConfiguration c(base);
+    c.set("log slopes", std::vector<double>{1.0, -0.8, 0.5, 0.2, -0.2, -0.5, -0.8, -1.0});
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(c);
+    EXPECT_THROWS_AS(oops::NonGaussianDensity{p}, eckit::BadParameter);
+  }
+  {  // sigma at mode must be positive
+    eckit::LocalConfiguration c(base);
+    c.set("sigma at mode", 0.0);
+    oops::NonGaussianDensityParameters p;
+    p.deserialize(c);
+    EXPECT_THROWS_AS(oops::NonGaussianDensity{p}, eckit::BadParameter);
   }
 }
 
