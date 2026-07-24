@@ -1,0 +1,4 @@
+CostJo   : Nonlinear Jo(Lorenz 95) = 3.2802835980476324e+01, nobs = 160, Jo/n = 2.0501772487797704e-01, err = 4.0000000596046370e-01
+CostJcDFI: Nonlinear Jc = 3.2760572015632716e-01
+CostJb   : Nonlinear Jb = 0.0000000000000000e+00
+CostFunction: Nonlinear J = 3.3130441700632652e+01
