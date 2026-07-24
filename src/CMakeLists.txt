@@ -637,6 +637,7 @@ if(BUILD_TESTING)
     test/assimilation/EvolvingGaussianSingleCycle.h
     test/assimilation/EvolvingGaussianStability.h
     test/assimilation/FullGMRES.h
+    test/assimilation/FormatAParity.h
     test/assimilation/NonGaussianDensity.h
     test/assimilation/NonGaussianDensityStress.h
     test/assimilation/rotmat.h
@@ -725,6 +726,7 @@ if(BUILD_TESTING)
     test/testinput/etkf.yaml
     test/testinput/fieldsets.yaml
     test/testinput/fft_multiple.yaml
+    test/testinput/parity_fixtures.json
     test/testinput/hello.yaml
     test/testinput/mpi.yaml
     test/testinput/parameters.yaml
@@ -1195,6 +1197,11 @@ if(BUILD_TESTING)
   ecbuild_add_test( TARGET  oops_assimilation_nongaussiandensity_stress
                     SOURCES test/assimilation/NonGaussianDensityStress.cc
                     ARGS    "test/testinput/empty.yaml"
+                    LIBS    oops )
+
+  ecbuild_add_test( TARGET  oops_assimilation_formata_parity
+                    SOURCES test/assimilation/FormatAParity.cc
+                    ARGS    "test/testinput/parity_fixtures.json"
                     LIBS    oops )
 
   ecbuild_add_test( TARGET  oops_assimilation_evolvinggaussian_singlecycle
