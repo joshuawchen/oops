@@ -1,0 +1,29 @@
+geometry:
+  resol: 40
+
+member analyses:
+- date: 2010-01-02T00:00:00Z
+  filename: Data/pff_calibration.mem001.a.2010-01-02T00:00:00Z.l95
+- date: 2010-01-02T00:00:00Z
+  filename: Data/pff_calibration.mem002.a.2010-01-02T00:00:00Z.l95
+- date: 2010-01-02T00:00:00Z
+  filename: Data/pff_calibration.mem003.a.2010-01-02T00:00:00Z.l95
+- date: 2010-01-02T00:00:00Z
+  filename: Data/pff_calibration.mem004.a.2010-01-02T00:00:00Z.l95
+
+exact analysis:
+  date: 2010-01-02T00:00:00Z
+  filename: Data/pff_calibration_exact.an.2010-01-02T00:00:00Z.l95
+
+# rms(ensemble mean - exact posterior mean) must be under this; the
+# flow's 21-step budget leaves a residual (norm plateau ~15% of the
+# initial), so the bound is generous -- tighten after first green
+mean tolerance: 0.15
+# ensemble spread (rms member deviation from the mean): neither
+# collapsed nor runaway; band refined at reference regeneration
+spread min: 0.01
+spread max: 0.80
+
+test:
+  reference filename: testoutput/pff_calibration_check.test
+  test output filename: testoutput/pff_calibration_check.test.out

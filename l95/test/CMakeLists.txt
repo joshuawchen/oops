@@ -66,6 +66,14 @@ list( APPEND l95_test_input
   testinput/eda_3dvar_pff_3.yaml
   testinput/eda_3dvar_pff_4.yaml
   testinput/eda_3dvar_pff.yaml
+  testinput/pff_calibration_1.yaml
+  testinput/pff_calibration_2.yaml
+  testinput/pff_calibration_3.yaml
+  testinput/pff_calibration_4.yaml
+  testinput/pff_calibration.yaml
+  testinput/pff_calibration_bgmean.yaml
+  testinput/pff_calibration_exact.yaml
+  testinput/pff_calibration_check.yaml
   testinput/eda_3dvar_zeromeanpert_1.yaml
   testinput/eda_3dvar_zeromeanpert_2.yaml
   testinput/eda_3dvar_zeromeanpert_3.yaml
@@ -216,6 +224,9 @@ list( APPEND l95_testoutput
   testoutput/eda_3dvar.test
   testoutput/eda_3dvar_block.test
   testoutput/eda_3dvar_pff.test
+  testoutput/pff_calibration.test
+  testoutput/pff_calibration_exact.test
+  testoutput/pff_calibration_check.test
   testoutput/eda_3dvar_zeromeanpert.test
   testoutput/eda_3dvar_zeromeanpert_compare.test
   testoutput/eda_4dvar.test
@@ -832,6 +843,28 @@ ecbuild_add_test( TARGET oops_l95_eda_3dvar_pff
                   COMMAND l95_eda.x
                   ARGS testinput/eda_3dvar_pff.yaml
                   TEST_DEPENDS oops_l95_genenspert oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_pff_calibration_bgmean
+                  COMMAND l95_ens_mean_variance.x
+                  ARGS testinput/pff_calibration_bgmean.yaml
+                  TEST_DEPENDS oops_l95_genenspert )
+
+ecbuild_add_test( TARGET oops_l95_pff_calibration_exact
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/pff_calibration_exact.yaml
+                  TEST_DEPENDS oops_l95_pff_calibration_bgmean oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_pff_calibration
+                  MPI 4
+                  COMMAND l95_eda.x
+                  ARGS testinput/pff_calibration.yaml
+                  TEST_DEPENDS oops_l95_genenspert oops_l95_makeobs3d )
+
+ecbuild_add_test( TARGET oops_l95_pff_calibration_check
+                  SOURCES lorenz95/PFFCalibration.cc
+                  ARGS testinput/pff_calibration_check.yaml
+                  LIBS lorenz95
+                  TEST_DEPENDS oops_l95_pff_calibration oops_l95_pff_calibration_exact )
 
 ecbuild_add_test( TARGET oops_l95_eda_3dvar_zeromeanpert
                   MPI 4
