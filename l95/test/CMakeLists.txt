@@ -24,6 +24,8 @@ list( APPEND l95_test_input
   testinput/4dvar_alpha.yaml
   testinput/4dvar_drgmresr.yaml
   testinput/4dvar_dripcg.yaml
+  testinput/4dvar_gaussequiv.yaml
+  testinput/4dvar_nongaussian.yaml
   testinput/4dvar_dripcgqn.yaml
   testinput/4dvar_drpcg.yaml
   testinput/4dvar_drpcgqn.yaml
@@ -197,6 +199,8 @@ list( APPEND l95_testoutput
   testoutput/4dvar_alpha.test
   testoutput/4dvar_drgmresr.test
   testoutput/4dvar_dripcg.test
+  testoutput/4dvar_gaussequiv.test
+  testoutput/4dvar_nongaussian.test
   testoutput/4dvar_dripcgqn.test
   testoutput/4dvar_drpcg.test
   testoutput/4dvar_drpcgqn.test
@@ -670,6 +674,16 @@ ecbuild_add_test( TARGET oops_l95_4dvar_drgmresr
 ecbuild_add_test( TARGET oops_l95_4dvar_dripcg
                   COMMAND l95_4dvar.x
                   ARGS testinput/4dvar_dripcg.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs4d )
+
+ecbuild_add_test( TARGET oops_l95_4dvar_gaussequiv
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/4dvar_gaussequiv.yaml
+                  TEST_DEPENDS oops_l95_forecast oops_l95_makeobs4d )
+
+ecbuild_add_test( TARGET oops_l95_4dvar_nongaussian
+                  COMMAND l95_4dvar.x
+                  ARGS testinput/4dvar_nongaussian.yaml
                   TEST_DEPENDS oops_l95_forecast oops_l95_makeobs4d )
 
 ecbuild_add_test( TARGET oops_l95_4dvar_dripcgqn
