@@ -63,7 +63,7 @@ variational:
       tstep: PT1H30M
       variable change: Identity
       name: L95TLM
-    ninner: 10
+    ninner: 4
     geometry:
       resol: 40
   - gradient norm reduction: 1e-10
@@ -74,7 +74,7 @@ variational:
       tstep: PT1H30M
       variable change: Identity
       name: L95TLM
-    ninner: 10
+    ninner: 4
     geometry:
       resol: 40
 final:
