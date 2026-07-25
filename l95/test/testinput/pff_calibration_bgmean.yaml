@@ -1,0 +1,16 @@
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-02T00:00:00Z
+      filename: Data/forecast.ens.%mem%.2010-01-01T00:00:00Z.P1D.l95
+    pattern: '%mem%'
+    nmembers: 4
+
+geometry:
+  resol: 40
+
+mean output:
+  datadir: Data
+  exp: pff_calibration.bgmean
+  type: an
+  date: 2010-01-02T00:00:00Z

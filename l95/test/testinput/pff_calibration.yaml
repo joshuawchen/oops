@@ -1,0 +1,9 @@
+files:
+- testinput/pff_calibration_1.yaml
+- testinput/pff_calibration_2.yaml
+- testinput/pff_calibration_3.yaml
+- testinput/pff_calibration_4.yaml
+
+test:
+  reference filename: testoutput/pff_calibration.test
+  test output filename: testoutput/pff_calibration.test.out
